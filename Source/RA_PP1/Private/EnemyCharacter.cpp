@@ -2,20 +2,26 @@
 
 
 #include "EnemyCharacter.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "AIController.h"
 
-// Sets default values
 AEnemyCharacter::AEnemyCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	
+
+}
+
+UBehaviorTree* AEnemyCharacter::GetBehaviorTree() const
+{
+	return BT_Enemy;
 }
 
 // Called when the game starts or when spawned
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame

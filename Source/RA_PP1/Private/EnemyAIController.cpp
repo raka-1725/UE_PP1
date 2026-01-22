@@ -2,9 +2,9 @@
 
 
 #include "EnemyAIController.h"
+#include "EnemyCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameFramework/Character.h"
 
 
 AEnemyAIController::AEnemyAIController()
@@ -17,7 +17,7 @@ AEnemyAIController::AEnemyAIController()
 
 	//Sight
 	SightConfig->SightRadius = 200.f;
-	SightConfig->LoseSightRadius = 2200.f;
+	SightConfig->LoseSightRadius = 2500.f;
 	SightConfig->PeripheralVisionAngleDegrees = 70.f;
 	SightConfig->SetMaxAge(5.f);
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
@@ -57,5 +57,19 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		GetBlackboardComponent()->ClearValue("TargetActor");
 	}
 }
+
+void AEnemyAIController::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	if (Enemy && Enemy -> GetBehaviorTree())
+	{	
+		RunBehaviorTree(Enemy->GetBehaviorTree());
+	}
+	
+}
+
+
 
 
