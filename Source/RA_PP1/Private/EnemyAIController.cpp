@@ -19,7 +19,7 @@ AEnemyAIController::AEnemyAIController()
 
 
 	//Sight
-	SightConfig->SightRadius = 200.f;
+	SightConfig->SightRadius = 2000.f;
 	SightConfig->LoseSightRadius = 2500.f;
 	SightConfig->PeripheralVisionAngleDegrees = 70.f;
 	SightConfig->SetMaxAge(5.f);
@@ -47,6 +47,11 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 {
 	if (!GetBlackboardComponent()) return;
 
+	UE_LOG(LogTemp, Warning, TEXT("Perception: %s sensed=%d"),
+	*Actor->GetName(),
+	Stimulus.WasSuccessfullySensed()
+);
+
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		GetBlackboardComponent()->SetValueAsObject("TargetActor", Actor);
@@ -61,11 +66,11 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	}
 }
 
-void AEnemyAIController::BeginPlay()
+void AEnemyAIController::OnPossess(APawn* InPawn)
 {
-	Super::BeginPlay();
+	Super::OnPossess(InPawn);
 	//Spawning enemy pawn
-	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(InPawn);
 
 	if(!Enemy) return;
 	

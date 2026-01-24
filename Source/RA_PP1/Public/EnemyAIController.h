@@ -21,7 +21,6 @@ public:
 	AEnemyAIController();
 
 protected:
-	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	UBlackboardComponent* BlackboardAsset;
@@ -38,4 +37,5 @@ protected:
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 	
+	virtual void OnPossess(APawn* InPawn) override;
 };
