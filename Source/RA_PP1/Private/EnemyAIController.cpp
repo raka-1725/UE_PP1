@@ -3,6 +3,7 @@
 
 #include "EnemyAIController.h"
 #include "EnemyCharacter.h"
+#include "BehaviorTree/BehaviorTree.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
@@ -11,6 +12,8 @@ AEnemyAIController::AEnemyAIController()
 {
 	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>("AIPerception");
 
+	SetPerceptionComponent(*AIPerception);
+	
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>("HearingConfig");
 
@@ -61,11 +64,14 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 void AEnemyAIController::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	//Spawning enemy pawn
 	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
-	if (Enemy && Enemy -> GetBehaviorTree())
-	{	
-		RunBehaviorTree(Enemy->GetBehaviorTree());
+
+	if(!Enemy) return;
+	
+	if (UBehaviorTree* BT_Enemy = Enemy -> GetBehaviorTree())
+	{
+		RunBehaviorTree(BT_Enemy);
 	}
 	
 }

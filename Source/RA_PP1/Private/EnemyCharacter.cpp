@@ -4,12 +4,14 @@
 #include "EnemyCharacter.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "AIController.h"
+#include "EnemyAIController.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	
+	AIControllerClass = AEnemyAIController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 }
 
