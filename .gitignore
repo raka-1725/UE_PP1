@@ -6,6 +6,7 @@ Saved/
 .idea/
 .vscode/
 *.log
+*.sln
 .DS_Store
 Thumbs.db
 
