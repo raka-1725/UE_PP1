@@ -4,7 +4,7 @@
 #include "EnemyCharacter.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "AIController.h"
-#include "EnemyAIController.h"
+#include "EnemyAI/AIController/EnemyAIController.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
