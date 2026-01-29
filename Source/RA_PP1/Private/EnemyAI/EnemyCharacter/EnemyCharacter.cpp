@@ -2,7 +2,6 @@
 
 
 #include "EnemyCharacter.h"
-#include "BehaviorTree/BehaviorTree.h"
 #include "AIController.h"
 #include "EnemyAI/AIController/EnemyAIController.h"
 
@@ -15,10 +14,6 @@ AEnemyCharacter::AEnemyCharacter()
 
 }
 
-UBehaviorTree* AEnemyCharacter::GetBehaviorTree() const
-{
-	return BT_Enemy;
-}
 
 // Called when the game starts or when spawned
 void AEnemyCharacter::BeginPlay()

@@ -17,17 +17,11 @@ class RA_PP1_API AEnemyCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AEnemyCharacter();
-	UBehaviorTree* GetBehaviorTree() const;
-	
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
-	UBehaviorTree* BT_Enemy;
-
-	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
