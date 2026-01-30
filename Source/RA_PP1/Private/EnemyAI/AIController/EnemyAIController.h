@@ -1,12 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "EnemyAIController.generated.h"
 
+
+class UEnvQuery;
 
 UENUM(BlueprintType)
 enum class EEnemyAIState : uint8
@@ -73,5 +76,14 @@ protected:
 	void HandlePatrol();
 	void HandleSearch();
 	void HandleChase();
+
+
+	//EQS
+	UPROPERTY(EditAnywhere, Category = "AI")
+	UEnvQuery *EnemyEQS;
+
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	void FindHidingSpot();
+	void OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
 
 };

@@ -4,6 +4,8 @@
 #include "GameFramework/Pawn.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "DrawDebugHelpers.h"
+#include "EnvironmentQuery/EnvQueryManager.h"
+#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -40,7 +42,7 @@ AEnemyAIController::AEnemyAIController()
 
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
-
+	
 }
 //Possess player
 void AEnemyAIController::OnPossess(APawn* InPawn)
@@ -151,8 +153,8 @@ void AEnemyAIController::HandleSearch()
 {
 	if (GetMoveStatus() == EPathFollowingStatus::Moving)
 		return;
-
-	MoveToLocation(LastKnownLocation);
+	FindHidingSpot();
+	//MoveToLocation(LastKnownLocation);
 
 #if WITH_EDITOR
 	DrawDebugSphere(
@@ -168,6 +170,24 @@ void AEnemyAIController::HandleSearch()
 	
 	SetState(EEnemyAIState::Patrol);
 }
+
+//EQS
+void AEnemyAIController::FindHidingSpot()
+{
+	FEnvQueryRequest SpotQueryRequest = FEnvQueryRequest(EnemyEQS, GetPawn());
+	SpotQueryRequest.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
+}
+
+void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result)
+{
+	FVector HideLocation = Result->GetItemAsLocation(0);
+	MoveToLocation(HideLocation);
+
+#if WITH_EDITOR
+	DrawDebugSphere(GetWorld(), HideLocation, 50.f, 12, FColor::Yellow, false, 2.f);
+	#endif
+}
+
 
 
 
