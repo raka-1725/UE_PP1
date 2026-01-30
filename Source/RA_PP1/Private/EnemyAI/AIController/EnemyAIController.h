@@ -27,6 +27,7 @@ public:
 	AEnemyAIController();
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaTime) override;
+	EEnemyAIState GetCurrentState() const { return CurrentState; }
 
 protected:
 
