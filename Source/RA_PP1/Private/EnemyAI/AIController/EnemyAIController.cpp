@@ -42,7 +42,7 @@ AEnemyAIController::AEnemyAIController()
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
 
 }
-//Posess player
+//Possess player
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
