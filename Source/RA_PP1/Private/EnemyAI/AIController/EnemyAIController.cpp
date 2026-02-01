@@ -7,6 +7,7 @@
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Perception/AISenseEvent.h"
 
 
 AEnemyAIController::AEnemyAIController()
@@ -55,6 +56,15 @@ void AEnemyAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!bPlayerVisible)
+	{
+		TimeSinceLost += DeltaTime;
+	}
+	else
+	{
+		TimeSinceLost = 0.0f;
+	}
+
 	switch (CurrentState)
 	{
 	case EEnemyAIState::Idle:
@@ -79,15 +89,29 @@ void AEnemyAIController::Tick(float DeltaTime)
 
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (Stimulus.WasSuccessfullySensed())
+	//Sight percep
+	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		TargetActor = Actor;
-		SetState(EEnemyAIState::Chase);
+		bPlayerVisible = Stimulus.WasSuccessfullySensed();
+		if (bPlayerVisible)
+		{
+			TargetActor = Actor;
+			SetState(EEnemyAIState::Chase);
+			return;
+		}
+		else if (Actor == TargetActor)
+		{
+			LastKnownLocation = Stimulus.StimulusLocation;
+			TargetActor = nullptr;
+			SetState(EEnemyAIState::Search);
+			return;
+		}
 	}
-	else if (Actor == TargetActor)
+
+	//Hear
+	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
 		LastKnownLocation = Stimulus.StimulusLocation;
-		TargetActor = nullptr;
 		SetState(EEnemyAIState::Search);
 	}
 }
@@ -118,24 +142,7 @@ void AEnemyAIController::HandlePatrol()
 
 	const FVector origin = GetPawn()->GetActorLocation();
 	//Selecting random point to patrol
-	const FVector PatrolPoint = UKismetMathLibrary::RandomPointInBoundingBox(origin,FVector(PatrolRadius));
-
-	MoveToLocation(PatrolPoint);
-
-
-
-	
-#if WITH_EDITOR
-	DrawDebugSphere(
-		GetWorld(),
-		PatrolPoint,
-		50.f,
-		12,
-		FColor::Green,
-		false,
-		2.f
-	);
-#endif
+	RunPatrolEQS();
 }
 
 void AEnemyAIController::HandleChase()
@@ -156,19 +163,32 @@ void AEnemyAIController::HandleSearch()
 	FindHidingSpot();
 	//MoveToLocation(LastKnownLocation);
 
+	if (SearchAttempts  < MaxSearchAttempts)
+	{
+		RunSearchEQS();
+		SearchAttempts++;
+		return;
+	}
+
+	if (TimeSinceLost > SearchDuration)
+	{
+		SearchAttempts = 0;
+		SetState(EEnemyAIState::Patrol);
+		return;
+	}
+	GetPawn()->AddControllerYawInput(45.f * GetWorld()->DeltaTimeSeconds);
+	
 #if WITH_EDITOR
 	DrawDebugSphere(
 		GetWorld(),
 		LastKnownLocation,
 		75.f,
 		16,
-		FColor::Yellow,
+		FColor::Emerald,
 		false,
 		2.f
 	);
 #endif
-	
-	SetState(EEnemyAIState::Patrol);
 }
 
 //EQS
@@ -178,14 +198,36 @@ void AEnemyAIController::FindHidingSpot()
 	SpotQueryRequest.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
 }
 
+void AEnemyAIController::RunSearchEQS()
+{
+	FEnvQueryRequest Query(SearchEQS, GetPawn());
+	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
+}
+
 void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result)
 {
-	FVector HideLocation = Result->GetItemAsLocation(0);
-	MoveToLocation(HideLocation);
+	FVector location = Result->GetItemAsLocation(0);
+	MoveToLocation(location);
 
 #if WITH_EDITOR
-	DrawDebugSphere(GetWorld(), HideLocation, 50.f, 12, FColor::Yellow, false, 2.f);
+	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Yellow, false, 2.f);
 	#endif
+}
+
+void AEnemyAIController::RunPatrolEQS()
+{
+	FEnvQueryRequest Query(PatrolEQS, GetPawn());
+	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnPatrolEQSFinished);
+}
+
+void AEnemyAIController::OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result)
+{
+	FVector location = Result->GetItemAsLocation(0);
+	MoveToLocation(location);
+
+#if WITH_EDITOR
+	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Blue, false, 2.f);
+#endif
 }
 
 

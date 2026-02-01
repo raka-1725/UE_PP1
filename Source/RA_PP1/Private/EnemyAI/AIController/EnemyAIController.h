@@ -32,6 +32,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	EEnemyAIState GetCurrentState() const { return CurrentState; }
 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	FVector LastKnownLocation;
 protected:
 
 	//Perception
@@ -55,8 +58,6 @@ protected:
 	UPROPERTY()
 	AActor* TargetActor;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	FVector LastKnownLocation;
 
 	//Settings
 	UPROPERTY(EditAnywhere, Category = "AISettings")
@@ -74,16 +75,31 @@ protected:
 	void HandleIdle();
 	void HandlePatrolWaypoint();
 	void HandlePatrol();
+	void RunSearchEQS();
 	void HandleSearch();
 	void HandleChase();
+
+	
+	//Search Logic
+	int MaxSearchAttempts = 0;
+	int SearchAttempts = 0;
+	float TimeSinceLost = 0.0f;
+	float SearchDuration = 5.0f;
+	bool bPlayerVisible = false;
 
 
 	//EQS
 	UPROPERTY(EditAnywhere, Category = "AI")
 	UEnvQuery *EnemyEQS;
+	
+	UPROPERTY(EditAnywhere, Category="AI")
+	UEnvQuery* SearchEQS;
+	UPROPERTY(EditAnywhere, Category="AI")
+	UEnvQuery* PatrolEQS;
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void FindHidingSpot();
 	void OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
-
+	void RunPatrolEQS();
+	void OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
 };
