@@ -33,13 +33,16 @@ AEnemyAIController::AEnemyAIController()
 	//Hear
 	HearingConfig->HearingRange = 1500.f;
 	HearingConfig->SetMaxAge(3.f);
-
-
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	
 	//Perception
 
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->ConfigureSense(*HearingConfig);
 	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
+	AIPerception->SetDominantSense(HearingConfig->GetSenseImplementation());
 
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
@@ -116,6 +119,10 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
 		LastKnownLocation = Stimulus.StimulusLocation;
+		UE_LOG(LogAIPerception,Warning,TEXT("Hearing at: %s"), *Stimulus.StimulusLocation.ToString());
+#if WITH_EDITOR
+		DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
+#endif
 		if (CurrentState != EEnemyAIState::Chase)
 		{
 			SetState(EEnemyAIState::Search);
