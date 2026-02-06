@@ -16,9 +16,9 @@ enum class EEnemyAIState : uint8
 {
 	Idle,
 	Patrol,
-	PatrolWaypoint,
 	Search,
 	Chase,
+	
 };
 
 UCLASS()
@@ -70,10 +70,9 @@ protected:
 	float PatrolRadius = 1000.0f;
 
 	//State
+	UFUNCTION()
 	void SetState(EEnemyAIState Newstate);
-
 	void HandleIdle();
-	void HandlePatrolWaypoint();
 	void HandlePatrol();
 	void RunSearchEQS();
 	void HandleSearch();
@@ -81,11 +80,6 @@ protected:
 
 	
 	//Search Logic
-	int MaxSearchAttempts = 0;
-	int SearchAttempts = 0;
-	float TimeSinceLost = 0.0f;
-	float SearchDuration = 5.0f;
-	bool bPlayerVisible = false;
 
 
 	//EQS
@@ -96,6 +90,18 @@ protected:
 	UEnvQuery* SearchEQS;
 	UPROPERTY(EditAnywhere, Category="AI")
 	UEnvQuery* PatrolEQS;
+
+	UPROPERTY(EditAnywhere, Category="AI/EQS")
+	int MaxSearchAttempts = 0;
+	int SearchAttempts = 0;
+	float TimeSinceLost = 0.0f;
+	float TimeSinceSeen = 0.0f;
+	float SightTransitionSeconds = 1.0f;
+	float SearchDuration = 5.0f;
+	bool bPlayerVisible = false;
+	
+
+
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void FindHidingSpot();

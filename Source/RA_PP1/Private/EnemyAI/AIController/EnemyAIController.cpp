@@ -49,7 +49,7 @@ AEnemyAIController::AEnemyAIController()
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	SetState(EEnemyAIState::PatrolWaypoint);
+	SetState(EEnemyAIState::Patrol);
 }
 
 void AEnemyAIController::Tick(float DeltaTime)
@@ -58,29 +58,35 @@ void AEnemyAIController::Tick(float DeltaTime)
 
 	if (!bPlayerVisible)
 	{
-		TimeSinceLost += DeltaTime;
+		TimeSinceSeen += DeltaTime;
+		//UE_LOG(LogAIPerception,Warning,TEXT("TImer since lost: %f"),TimeSinceLost);
 	}
 	else
 	{
-		TimeSinceLost = 0.0f;
+		TimeSinceSeen = 0.0f;
+	}
+	if (!bPlayerVisible && CurrentState == EEnemyAIState::Chase && TimeSinceSeen > SightTransitionSeconds)
+	{
+		SetState(EEnemyAIState::Search);
 	}
 
 	switch (CurrentState)
 	{
 	case EEnemyAIState::Idle:
 		HandleIdle();
-		break;
-	case EEnemyAIState::PatrolWaypoint:
-		HandlePatrolWaypoint();
+		UE_LOG(LogAIPerception,Verbose,TEXT("Idle"));
 		break;
 	case EEnemyAIState::Patrol:
 		HandlePatrol();
+		UE_LOG(LogAIPerception,Verbose,TEXT("Patrol"));
 		break;
 	case EEnemyAIState::Chase:
 		HandleChase();
+		UE_LOG(LogAIPerception,Verbose,TEXT("Chase"));
 		break;
 	case EEnemyAIState::Search:
 		HandleSearch();
+		UE_LOG(LogAIPerception,Verbose,TEXT("Search"));
 		break;
 	default:
 		break;
@@ -93,18 +99,16 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
 		bPlayerVisible = Stimulus.WasSuccessfullySensed();
-		if (bPlayerVisible)
+		if (Stimulus.WasSuccessfullySensed())
 		{
 			TargetActor = Actor;
+			bPlayerVisible = true;
 			SetState(EEnemyAIState::Chase);
-			return;
 		}
 		else if (Actor == TargetActor)
 		{
+			bPlayerVisible = false;
 			LastKnownLocation = Stimulus.StimulusLocation;
-			TargetActor = nullptr;
-			SetState(EEnemyAIState::Search);
-			return;
 		}
 	}
 
@@ -112,7 +116,10 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
 		LastKnownLocation = Stimulus.StimulusLocation;
-		SetState(EEnemyAIState::Search);
+		if (CurrentState != EEnemyAIState::Chase)
+		{
+			SetState(EEnemyAIState::Search);
+		}
 	}
 }
 
@@ -130,18 +137,11 @@ void AEnemyAIController::HandleIdle()
 	
 }
 
-void AEnemyAIController::HandlePatrolWaypoint()
-{
-	
-}
-
 void AEnemyAIController::HandlePatrol()
 {
-	if (GetMoveStatus() == EPathFollowingStatus::Moving)
+	if (GetMoveStatus() != EPathFollowingStatus::Idle)
 		return;
 
-	const FVector origin = GetPawn()->GetActorLocation();
-	//Selecting random point to patrol
 	RunPatrolEQS();
 }
 
@@ -158,37 +158,25 @@ void AEnemyAIController::HandleChase()
 
 void AEnemyAIController::HandleSearch()
 {
-	if (GetMoveStatus() == EPathFollowingStatus::Moving)
-		return;
-	FindHidingSpot();
-	//MoveToLocation(LastKnownLocation);
-
-	if (SearchAttempts  < MaxSearchAttempts)
+	if (bPlayerVisible){SetState(EEnemyAIState::Chase); return;}
+	if (SearchAttempts < MaxSearchAttempts && GetMoveStatus() == EPathFollowingStatus::Idle)
 	{
 		RunSearchEQS();
 		SearchAttempts++;
 		return;
 	}
 
-	if (TimeSinceLost > SearchDuration)
+	if (SearchAttempts >= MaxSearchAttempts)
+	{
+		GetPawn()->AddControllerYawInput(60.0f * GetWorld()->DeltaTimeSeconds);
+		UE_LOG(LogAIPerception,Verbose,TEXT("Rotate to scan"));
+	}
+
+	if (TimeSinceSeen > SearchDuration)
 	{
 		SearchAttempts = 0;
 		SetState(EEnemyAIState::Patrol);
-		return;
 	}
-	GetPawn()->AddControllerYawInput(45.f * GetWorld()->DeltaTimeSeconds);
-	
-#if WITH_EDITOR
-	DrawDebugSphere(
-		GetWorld(),
-		LastKnownLocation,
-		75.f,
-		16,
-		FColor::Emerald,
-		false,
-		2.f
-	);
-#endif
 }
 
 //EQS
@@ -204,9 +192,13 @@ void AEnemyAIController::RunSearchEQS()
 	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
 }
 
-void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result)
+void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> result)
 {
-	FVector location = Result->GetItemAsLocation(0);
+	//EQS 0 return check
+	if (!result.IsValid()){UE_LOG(LogAIPerception,Verbose,TEXT("EQS returned no result")); return;}
+
+	
+	FVector location = result->GetItemAsLocation(0);
 	MoveToLocation(location);
 
 #if WITH_EDITOR
@@ -220,9 +212,9 @@ void AEnemyAIController::RunPatrolEQS()
 	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnPatrolEQSFinished);
 }
 
-void AEnemyAIController::OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result)
+void AEnemyAIController::OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> result)
 {
-	FVector location = Result->GetItemAsLocation(0);
+	FVector location = result->GetItemAsLocation(0);
 	MoveToLocation(location);
 
 #if WITH_EDITOR
