@@ -4,6 +4,7 @@
 #include "GameFramework/Pawn.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "DrawDebugHelpers.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -53,6 +54,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	SetState(EEnemyAIState::Patrol);
+	RunBehaviorTree(BT_Enemy);
 }
 
 void AEnemyAIController::Tick(float DeltaTime)
@@ -73,6 +75,7 @@ void AEnemyAIController::Tick(float DeltaTime)
 		SetState(EEnemyAIState::Search);
 	}
 
+	/*
 	switch (CurrentState)
 	{
 	case EEnemyAIState::Idle:
@@ -94,40 +97,42 @@ void AEnemyAIController::Tick(float DeltaTime)
 	default:
 		break;
 	}
+	*/
 }
 
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	
 	//Sight percep
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
 		bPlayerVisible = Stimulus.WasSuccessfullySensed();
-		if (Stimulus.WasSuccessfullySensed())
+		if (bPlayerVisible)
 		{
-			TargetActor = Actor;
-			bPlayerVisible = true;
-			SetState(EEnemyAIState::Chase);
+			BB->SetValueAsObject("TargetActor", Actor);
+			BB->SetValueAsEnum("State", (uint8)EEnemyAIState::Chase);
+			
 		}
-		else if (Actor == TargetActor)
+		else
 		{
-			bPlayerVisible = false;
-			LastKnownLocation = Stimulus.StimulusLocation;
+			BB->ClearValue("TargetActor");
+			BB->SetValueAsVector("TargetLocation", Stimulus.StimulusLocation);
+			BB->SetValueAsEnum("AIState", (uint8)EEnemyAIState::Search);
 		}
+	}
+	//Hear
+	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
+	{
+		if (!bPlayerVisible)
+		{
+			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+		}
+		#if WITH_EDITOR
+				DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
+		#endif
 	}
 
-	//Hear
-	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
-	{
-		LastKnownLocation = Stimulus.StimulusLocation;
-		UE_LOG(LogAIPerception,Warning,TEXT("Hearing at: %s"), *Stimulus.StimulusLocation.ToString());
-#if WITH_EDITOR
-		DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
-#endif
-		if (CurrentState != EEnemyAIState::Chase)
-		{
-			SetState(EEnemyAIState::Search);
-		}
-	}
 }
 
 void AEnemyAIController::SetState(EEnemyAIState NewState)
@@ -136,7 +141,7 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 		return;
 
 	CurrentState = NewState;
-	StopMovement();
+	//StopMovement();
 }
 
 void AEnemyAIController::HandleIdle()
@@ -160,7 +165,7 @@ void AEnemyAIController::HandleChase()
 		return;	
 	}
 
-	MoveToActor(TargetActor, ChaseAcceptanceRadius);
+	//MoveToActor(TargetActor, ChaseAcceptanceRadius);
 }
 
 void AEnemyAIController::HandleSearch()
@@ -206,7 +211,7 @@ void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::Thre
 
 	
 	FVector location = result->GetItemAsLocation(0);
-	MoveToLocation(location);
+	//MoveToLocation(location);
 
 #if WITH_EDITOR
 	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Yellow, false, 2.f);
@@ -222,7 +227,7 @@ void AEnemyAIController::RunPatrolEQS()
 void AEnemyAIController::OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> result)
 {
 	FVector location = result->GetItemAsLocation(0);
-	MoveToLocation(location);
+	//MoveToLocation(location);
 
 #if WITH_EDITOR
 	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Blue, false, 2.f);

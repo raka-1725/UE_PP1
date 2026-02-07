@@ -33,23 +33,28 @@ public:
 	EEnemyAIState GetCurrentState() const { return CurrentState; }
 
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	FVector LastKnownLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	UBehaviorTree* BT_Enemy;
 protected:
 
 	//Perception
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	UAIPerceptionComponent* AIPerception;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	UAISenseConfig_Sight* SightConfig;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	UAISenseConfig_Hearing* HearingConfig;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "AI")
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	void UpdateBBState(EEnemyAIState NewState);
 
 	//AI STATE
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
@@ -70,8 +75,9 @@ protected:
 	float PatrolRadius = 1000.0f;
 
 	//State
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "AI")
 	void SetState(EEnemyAIState Newstate);
+	
 	void HandleIdle();
 	void HandlePatrol();
 	void RunSearchEQS();
@@ -91,13 +97,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category="AI")
 	UEnvQuery* PatrolEQS;
 
-	UPROPERTY(EditAnywhere, Category="AI/EQS")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	int MaxSearchAttempts = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	int SearchAttempts = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	float TimeSinceLost = 0.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	float TimeSinceSeen = 0.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	float SightTransitionSeconds = 1.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	float SearchDuration = 5.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
 	bool bPlayerVisible = false;
 	
 
@@ -105,6 +117,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void FindHidingSpot();
+	
 	void OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
 	void RunPatrolEQS();
 	void OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
