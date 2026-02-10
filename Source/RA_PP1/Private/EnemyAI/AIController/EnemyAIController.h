@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "AIController.h"
+#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -30,18 +30,21 @@ public:
 	AEnemyAIController();
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaTime) override;
-	EEnemyAIState GetCurrentState() const { return CurrentState; }
-
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-	FVector LastKnownLocation;
 
+	//Toggles
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bSightPerception;
+	bool bHearPerception;
+	bool bUseEQS;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	UBehaviorTree* BT_Enemy;
+
+	
 protected:
 
 	//Perception
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	UAIPerceptionComponent* AIPerception;
 
@@ -54,8 +57,7 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-	void UpdateBBState(EEnemyAIState NewState);
-
+	
 	//AI STATE
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	EEnemyAIState CurrentState = EEnemyAIState::Idle;
@@ -63,8 +65,33 @@ protected:
 	UPROPERTY()
 	AActor* TargetActor;
 
+	//EQS
+	UPROPERTY(EditAnywhere, Category = "AI | EQS")
+	UEnvQuery* EQS;
 
+	UFUNCTION(BlueprintCallable, Category = "AI | EQS")
+	void RunEQS();
+	void OnEQSFinished(TSharedPtr<FEnvQueryResult> EnvQueryResult);
+
+
+
+	
+	//Search
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	bool bPlayerVisible = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	float TimeSinceSeen = 0.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	float SightTransitionSec = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	float SearchDuration = 5.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	int MaxSearchAttempt = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	int SearchAttempts = 0;
+	
 	//Settings
+
 	UPROPERTY(EditAnywhere, Category = "AISettings")
 	float ChaseAcceptanceRadius = 15.0f;
 
@@ -74,51 +101,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AISettings")
 	float PatrolRadius = 1000.0f;
 
-	//State
-	UFUNCTION(BlueprintCallable, Category = "AI")
-	void SetState(EEnemyAIState Newstate);
-	
-	void HandleIdle();
-	void HandlePatrol();
-	void RunSearchEQS();
-	void HandleSearch();
-	void HandleChase();
 
-	
-	//Search Logic
-
-
-	//EQS
-	UPROPERTY(EditAnywhere, Category = "AI")
-	UEnvQuery *EnemyEQS;
-	
-	UPROPERTY(EditAnywhere, Category="AI")
-	UEnvQuery* SearchEQS;
-	UPROPERTY(EditAnywhere, Category="AI")
-	UEnvQuery* PatrolEQS;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	int MaxSearchAttempts = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	int SearchAttempts = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	float TimeSinceLost = 0.0f;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	float TimeSinceSeen = 0.0f;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	float SightTransitionSeconds = 1.0f;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	float SearchDuration = 5.0f;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI/EQS")
-	bool bPlayerVisible = false;
-	
-
-
-
-	UFUNCTION(BlueprintCallable, Category = "AI")
-	void FindHidingSpot();
-	
-	void OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
-	void RunPatrolEQS();
-	void OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> Result);
+public:
+	void SetState(EEnemyAIState NewState);
 };

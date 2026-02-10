@@ -1,4 +1,6 @@
 #include "EnemyAI/AIController/LastLocContext.h"
+
+#include "BehaviorTree/BlackboardComponent.h"
 #include "EnemyAI/AIController/EnemyAIController.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"
 
@@ -16,7 +18,9 @@ void ULastLocContext::ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQuery
 		}
 	}
 	if (!Controller){ return;}
-	const FVector location = Controller->LastKnownLocation;
+	AAIController* AIController = Cast<AAIController>(Controller);
+	UBlackboardComponent* BB = AIController->GetBlackboardComponent();
+	const FVector location = BB->GetValueAsVector("LastKnownLocation");;
 	if (location.ContainsNaN()){ return;}
 	UEnvQueryItemType_Point::SetContextHelper(ContextData, location);
 }

@@ -2,12 +2,9 @@
 #include "EnemyAIController.h"
 
 #include "GameFramework/Pawn.h"
-#include "Navigation/PathFollowingComponent.h"
 #include "DrawDebugHelpers.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
-#include "EnvironmentQuery/EnvQueryTypes.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "Perception/AISenseEvent.h"
 
 
@@ -42,8 +39,7 @@ AEnemyAIController::AEnemyAIController()
 
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->ConfigureSense(*HearingConfig);
-	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
-	AIPerception->SetDominantSense(HearingConfig->GetSenseImplementation());
+	
 
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
@@ -53,8 +49,8 @@ AEnemyAIController::AEnemyAIController()
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	SetState(EEnemyAIState::Patrol);
 	RunBehaviorTree(BT_Enemy);
+	SetState(EEnemyAIState::Patrol);
 }
 
 void AEnemyAIController::Tick(float DeltaTime)
@@ -70,59 +66,38 @@ void AEnemyAIController::Tick(float DeltaTime)
 	{
 		TimeSinceSeen = 0.0f;
 	}
-	if (!bPlayerVisible && CurrentState == EEnemyAIState::Chase && TimeSinceSeen > SightTransitionSeconds)
+	
+	if (!bPlayerVisible && CurrentState == EEnemyAIState::Chase && TimeSinceSeen > SightTransitionSec)
 	{
 		SetState(EEnemyAIState::Search);
 	}
-
-	/*
-	switch (CurrentState)
-	{
-	case EEnemyAIState::Idle:
-		HandleIdle();
-		UE_LOG(LogAIPerception,Verbose,TEXT("Idle"));
-		break;
-	case EEnemyAIState::Patrol:
-		HandlePatrol();
-		UE_LOG(LogAIPerception,Verbose,TEXT("Patrol"));
-		break;
-	case EEnemyAIState::Chase:
-		HandleChase();
-		UE_LOG(LogAIPerception,Verbose,TEXT("Chase"));
-		break;
-	case EEnemyAIState::Search:
-		HandleSearch();
-		UE_LOG(LogAIPerception,Verbose,TEXT("Search"));
-		break;
-	default:
-		break;
-	}
-	*/
 }
 
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	UBlackboardComponent* BB = GetBlackboardComponent();
 	
-	//Sight percep
-	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
+	//Sight percept
+	if (bSightPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
 		bPlayerVisible = Stimulus.WasSuccessfullySensed();
 		if (bPlayerVisible)
 		{
+			TargetActor = Actor;
 			BB->SetValueAsObject("TargetActor", Actor);
 			BB->SetValueAsEnum("State", (uint8)EEnemyAIState::Chase);
 			
 		}
 		else
 		{
+			TargetActor = nullptr;
 			BB->ClearValue("TargetActor");
 			BB->SetValueAsVector("TargetLocation", Stimulus.StimulusLocation);
 			BB->SetValueAsEnum("AIState", (uint8)EEnemyAIState::Search);
 		}
 	}
 	//Hear
-	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
+	else if (bHearPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
 		if (!bPlayerVisible)
 		{
@@ -141,66 +116,12 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 		return;
 
 	CurrentState = NewState;
-	//StopMovement();
 }
 
-void AEnemyAIController::HandleIdle()
+void AEnemyAIController::RunEQS()
 {
-	
-}
-
-void AEnemyAIController::HandlePatrol()
-{
-	if (GetMoveStatus() != EPathFollowingStatus::Idle)
-		return;
-
-	RunPatrolEQS();
-}
-
-void AEnemyAIController::HandleChase()
-{
-	if (!TargetActor)
-	{
-		SetState(EEnemyAIState::Search);
-		return;	
-	}
-
-	//MoveToActor(TargetActor, ChaseAcceptanceRadius);
-}
-
-void AEnemyAIController::HandleSearch()
-{
-	if (bPlayerVisible){SetState(EEnemyAIState::Chase); return;}
-	if (SearchAttempts < MaxSearchAttempts && GetMoveStatus() == EPathFollowingStatus::Idle)
-	{
-		RunSearchEQS();
-		SearchAttempts++;
-		return;
-	}
-
-	if (SearchAttempts >= MaxSearchAttempts)
-	{
-		GetPawn()->AddControllerYawInput(60.0f * GetWorld()->DeltaTimeSeconds);
-		UE_LOG(LogAIPerception,Verbose,TEXT("Rotate to scan"));
-	}
-
-	if (TimeSinceSeen > SearchDuration)
-	{
-		SearchAttempts = 0;
-		SetState(EEnemyAIState::Patrol);
-	}
-}
-
-//EQS
-void AEnemyAIController::FindHidingSpot()
-{
-	FEnvQueryRequest SpotQueryRequest = FEnvQueryRequest(EnemyEQS, GetPawn());
-	SpotQueryRequest.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
-}
-
-void AEnemyAIController::RunSearchEQS()
-{
-	FEnvQueryRequest Query(SearchEQS, GetPawn());
+	if (!bUseEQS) return;
+	FEnvQueryRequest Query(EQS, GetPawn());
 	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnEQSFinished);
 }
 
@@ -208,31 +129,17 @@ void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::Thre
 {
 	//EQS 0 return check
 	if (!result.IsValid()){UE_LOG(LogAIPerception,Verbose,TEXT("EQS returned no result")); return;}
-
 	
 	FVector location = result->GetItemAsLocation(0);
-	//MoveToLocation(location);
+
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	BB->SetValueAsVector("EQSLocation", location);
 
 #if WITH_EDITOR
 	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Yellow, false, 2.f);
 	#endif
 }
 
-void AEnemyAIController::RunPatrolEQS()
-{
-	FEnvQueryRequest Query(PatrolEQS, GetPawn());
-	Query.Execute(EEnvQueryRunMode::SingleResult, this, &AEnemyAIController::OnPatrolEQSFinished);
-}
-
-void AEnemyAIController::OnPatrolEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::ThreadSafe> result)
-{
-	FVector location = result->GetItemAsLocation(0);
-	//MoveToLocation(location);
-
-#if WITH_EDITOR
-	DrawDebugSphere(GetWorld(), location, 50.f, 12, FColor::Blue, false, 2.f);
-#endif
-}
 
 
 

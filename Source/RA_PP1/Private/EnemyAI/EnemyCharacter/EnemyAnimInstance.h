@@ -14,8 +14,8 @@ class UEnemyAnimInstance : public UAnimInstance
 
 
 	public:
-	UPROPERTY(BlueprintReadOnly, Category = "AI")
-	EEnemyAIState AIState;
+	//UPROPERTY(BlueprintReadOnly, Category = "AI")
+	//EEnemyAIState AIState;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float MovementSpeed;

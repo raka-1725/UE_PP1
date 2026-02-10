@@ -16,5 +16,5 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	
 	AAIController* AIController = Pawn->GetController<AAIController>();
 	AEnemyAIController* EnemyAI = Cast<AEnemyAIController>(AIController);
-	AIState = EnemyAI->GetCurrentState();
+	//AIState = EnemyAI->GetCurrentState();
 }
