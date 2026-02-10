@@ -76,6 +76,7 @@ void AEnemyAIController::Tick(float DeltaTime)
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	UBlackboardComponent* BB = GetBlackboardComponent();
+	BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Patrol);
 	
 	//Sight percept
 	if (bSightPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
@@ -85,15 +86,15 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		{
 			TargetActor = Actor;
 			BB->SetValueAsObject("TargetActor", Actor);
-			BB->SetValueAsEnum("State", (uint8)EEnemyAIState::Chase);
+			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Chase);
 			
 		}
 		else
 		{
 			TargetActor = nullptr;
 			BB->ClearValue("TargetActor");
-			BB->SetValueAsVector("TargetLocation", Stimulus.StimulusLocation);
-			BB->SetValueAsEnum("AIState", (uint8)EEnemyAIState::Search);
+			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Search);
 		}
 	}
 	//Hear
@@ -116,6 +117,8 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 		return;
 
 	CurrentState = NewState;
+	 UBlackboardComponent* BB = GetBlackboardComponent();
+	BB->SetValueAsEnum("EnemyAIState", (uint8)NewState);
 }
 
 void AEnemyAIController::RunEQS()

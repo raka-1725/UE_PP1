@@ -6,20 +6,11 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
+#include "RA_PP1/Public/EEnemyAIState.h"
 #include "EnemyAIController.generated.h"
 
 
 class UEnvQuery;
-
-UENUM(BlueprintType)
-enum class EEnemyAIState : uint8
-{
-	Idle,
-	Patrol,
-	Search,
-	Chase,
-	
-};
 
 UCLASS()
 class RA_PP1_API AEnemyAIController : public AAIController
@@ -35,7 +26,9 @@ public:
 	//Toggles
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bSightPerception;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bHearPerception;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bUseEQS;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
