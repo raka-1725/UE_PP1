@@ -111,6 +111,7 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 				DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
 		#endif
 	}
+	
 
 }
 

@@ -96,5 +96,7 @@ protected:
 
 
 public:
-	void SetState(EEnemyAIState NewState);
+	UFUNCTION(BlueprintCallable) void SetState(EEnemyAIState NewState);
+	UFUNCTION(BlueprintCallable) EEnemyAIState GetState() const { return CurrentState; }
+	
 };
