@@ -6,7 +6,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
-#include "RA_PP1/Public/EEnemyAIState.h"
+#include "RA_PP1/Public/EnemyAIState.h"
 #include "EnemyAIController.generated.h"
 
 

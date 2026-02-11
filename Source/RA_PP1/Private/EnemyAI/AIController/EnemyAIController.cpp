@@ -76,7 +76,6 @@ void AEnemyAIController::Tick(float DeltaTime)
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	UBlackboardComponent* BB = GetBlackboardComponent();
-	BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Patrol);
 	
 	//Sight percept
 	if (bSightPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
@@ -84,13 +83,13 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		bPlayerVisible = Stimulus.WasSuccessfullySensed();
 		if (bPlayerVisible)
 		{
-			TargetActor = Actor;
-			BB->SetValueAsObject("TargetActor", Actor);
-			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Chase);
+			GetBlackboardComponent()->SetValueAsObject("TargetActor", Actor);
+			SetState(EEnemyAIState::Chase);
 			
 		}
 		else
 		{
+			//add timer here for grace period
 			TargetActor = nullptr;
 			BB->ClearValue("TargetActor");
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
@@ -103,6 +102,10 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		if (!bPlayerVisible)
 		{
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+			if (CurrentState == EEnemyAIState::Patrol)
+			{
+				BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Search);
+			}
 		}
 		#if WITH_EDITOR
 				DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
@@ -117,7 +120,7 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 		return;
 
 	CurrentState = NewState;
-	 UBlackboardComponent* BB = GetBlackboardComponent();
+	UBlackboardComponent* BB = GetBlackboardComponent();
 	BB->SetValueAsEnum("EnemyAIState", (uint8)NewState);
 }
 
