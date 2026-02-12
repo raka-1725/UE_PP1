@@ -3,6 +3,7 @@
 
 #include "GameFramework/Pawn.h"
 #include "DrawDebugHelpers.h"
+#include "InterchangeResult.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "Perception/AISenseEvent.h"
@@ -56,7 +57,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 void AEnemyAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	if (!bPlayerVisible)
 	{
 		TimeSinceSeen += DeltaTime;
@@ -99,16 +100,16 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		{
 			GetBlackboardComponent()->SetValueAsObject("TargetActor", Actor);
 			SearchAttempts = 0;
-			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Chase);
+			SetState(EEnemyAIState::Chase);
 			
 		}
 		else
 		{
 			//add timer here for grace period
 			TargetActor = nullptr;
-			BB->ClearValue("TargetActor");
+			//BB->ClearValue("TargetActor");
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
-			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Search);
+			SetState(EEnemyAIState::Search);
 		}
 	}
 	//Hear
@@ -119,7 +120,7 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
 			if (CurrentState == EEnemyAIState::Patrol)
 			{
-				BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Search);
+				SetState(EEnemyAIState::Search);
 			}
 		}
 		#if WITH_EDITOR
@@ -138,14 +139,9 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 
 	CurrentState = NewState;
 	UBlackboardComponent* BB = GetBlackboardComponent();
-	BB->SetValueAsEnum("EnemyAIState", (uint8)NewState);
-}
+	BB->SetValueAsEnum("EnemyAIState", (uint8(NewState)));
 
-FVector AEnemyAIController::GetNextPatrolLocation()
-{
-	FVector PT = PatrolLocations[CurrentPatrolIndex];
-	CurrentPatrolIndex = (CurrentPatrolIndex + 1) % PatrolLocations.Num();
-	return PT;
+	//UE_LOG(LogTemp, Warning, TEXT("GripState: %i"), CurrentState);
 }
 
 void AEnemyAIController::RunEQS()

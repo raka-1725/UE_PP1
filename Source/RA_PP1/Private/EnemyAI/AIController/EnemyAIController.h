@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -111,6 +110,9 @@ public:
 	UFUNCTION(BlueprintCallable) void SetState(EEnemyAIState NewState);
 	UFUNCTION(BlueprintCallable) EEnemyAIState GetState() const { return CurrentState; }
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	FVector GetNextPatrolLocation();
+	FVector GetNextPatrolLocation()
+	{
+		return PatrolLocations[(CurrentPatrolIndex + 1) % PatrolLocations.Num()];
+	};
 	
 };
