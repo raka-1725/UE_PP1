@@ -11,8 +11,7 @@ void ULastLocContext::ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQuery
 	AEnemyAIController* Controller = Cast<AEnemyAIController>(QueryInstance.Owner.Get());
 	if (!Controller)
 	{
-		APawn* Pawn = Cast<APawn>(Owner);
-		if (!Pawn)
+		if (APawn* Pawn = Cast<APawn>(QueryInstance.Owner.Get()))
 		{
 			Controller = Cast<AEnemyAIController>(Pawn->GetController());	
 		}

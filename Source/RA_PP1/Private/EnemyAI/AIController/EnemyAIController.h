@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -31,6 +32,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	bool bUseEQS;
 	
+	//PatrolWaypoints
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	bool bPatrol;
+	//make widget allows gizmo edit
+	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = true), BlueprintReadWrite, Category = "AI")
+	TArray<FVector> PatrolLocations;
+	int CurrentPatrolIndex = 0;
+
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	UBehaviorTree* BT_Enemy;
 
@@ -50,7 +60,7 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-	
+
 	//AI STATE
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	EEnemyAIState CurrentState = EEnemyAIState::Idle;
@@ -79,6 +89,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
 	float SearchDuration = 5.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
+	float SearchTimer = 0.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
 	int MaxSearchAttempt = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | EQS")
 	int SearchAttempts = 0;
@@ -98,5 +110,7 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable) void SetState(EEnemyAIState NewState);
 	UFUNCTION(BlueprintCallable) EEnemyAIState GetState() const { return CurrentState; }
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	FVector GetNextPatrolLocation();
 	
 };

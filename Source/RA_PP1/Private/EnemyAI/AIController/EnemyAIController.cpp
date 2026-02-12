@@ -71,6 +71,20 @@ void AEnemyAIController::Tick(float DeltaTime)
 	{
 		SetState(EEnemyAIState::Search);
 	}
+
+	if (CurrentState == EEnemyAIState::Search)
+	{
+		SearchTimer += DeltaTime;
+		if (SearchTimer >= SearchDuration)
+		{
+			SearchTimer = 0.0f;
+			SetState(EEnemyAIState::Patrol);
+		}
+	}
+	else
+	{
+		SearchTimer = 0.0f;
+	}
 }
 
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -84,7 +98,8 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 		if (bPlayerVisible)
 		{
 			GetBlackboardComponent()->SetValueAsObject("TargetActor", Actor);
-			SetState(EEnemyAIState::Chase);
+			SearchAttempts = 0;
+			BB->SetValueAsEnum("EnemyAIState", (uint8)EEnemyAIState::Chase);
 			
 		}
 		else
@@ -99,7 +114,7 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	//Hear
 	else if (bHearPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
-		if (!bPlayerVisible)
+		if (!bPlayerVisible && CurrentState != EEnemyAIState::Chase)
 		{
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
 			if (CurrentState == EEnemyAIState::Patrol)
@@ -115,6 +130,7 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 
 }
 
+
 void AEnemyAIController::SetState(EEnemyAIState NewState)
 {
 	if (CurrentState == NewState)
@@ -123,6 +139,13 @@ void AEnemyAIController::SetState(EEnemyAIState NewState)
 	CurrentState = NewState;
 	UBlackboardComponent* BB = GetBlackboardComponent();
 	BB->SetValueAsEnum("EnemyAIState", (uint8)NewState);
+}
+
+FVector AEnemyAIController::GetNextPatrolLocation()
+{
+	FVector PT = PatrolLocations[CurrentPatrolIndex];
+	CurrentPatrolIndex = (CurrentPatrolIndex + 1) % PatrolLocations.Num();
+	return PT;
 }
 
 void AEnemyAIController::RunEQS()
