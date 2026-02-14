@@ -12,5 +12,5 @@ class RA_PP1_API ULastLocContext : public UEnvQueryContext
 	GENERATED_BODY()
 public:	
 	virtual void ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQueryContextData& ContextData) const override;
-
+	
 };

@@ -19,8 +19,10 @@ void ULastLocContext::ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQuery
 	if (!Controller){ return;}
 	AAIController* AIController = Cast<AAIController>(Controller);
 	UBlackboardComponent* BB = AIController->GetBlackboardComponent();
+	
 	const FVector location = BB->GetValueAsVector("LastKnownLocation");;
-	if (location.ContainsNaN()){ return;}
+	
+	if (location.ContainsNaN() || location.IsNearlyZero() || location == FNavigationSystem::InvalidLocation){ return;}
 	UEnvQueryItemType_Point::SetContextHelper(ContextData, location);
 }
 

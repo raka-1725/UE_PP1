@@ -24,14 +24,14 @@ AEnemyAIController::AEnemyAIController()
 	SightConfig->SightRadius = 2000.f;
 	SightConfig->LoseSightRadius = 2500.f;
 	SightConfig->PeripheralVisionAngleDegrees = 70.f;
-	SightConfig->SetMaxAge(5.f);
+	SightConfig->SetMaxAge(5.0f);
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 
 	//Hear
-	HearingConfig->HearingRange = 1500.f;
-	HearingConfig->SetMaxAge(3.f);
+	HearingConfig->HearingRange = 2000.f;
+	HearingConfig->SetMaxAge(5.0f);
 	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -45,6 +45,7 @@ AEnemyAIController::AEnemyAIController()
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
 	
+	
 }
 //Possess player
 void AEnemyAIController::OnPossess(APawn* InPawn)
@@ -52,6 +53,8 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	RunBehaviorTree(BT_Enemy);
 	SetState(EEnemyAIState::Patrol);
+
+	if (UBlackboardComponent* BB = GetBlackboardComponent()){BB->ClearValue("LastKnownLocation");}
 }
 
 void AEnemyAIController::Tick(float DeltaTime)
@@ -101,6 +104,7 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 			GetBlackboardComponent()->SetValueAsObject("TargetActor", Actor);
 			SearchAttempts = 0;
 			SetState(EEnemyAIState::Chase);
+			BB->SetValueAsVector("LastKnownLocation", Actor->GetActorLocation());
 			
 		}
 		else
@@ -115,13 +119,17 @@ void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus
 	//Hear
 	else if (bHearPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
-		if (!bPlayerVisible && CurrentState != EEnemyAIState::Chase)
+		//UE_LOG(LogTemp, Warning, TEXT("Hear sound at %s"), *Stimulus.StimulusLocation.ToString());
+		if (Stimulus.WasSuccessfullySensed())
 		{
 			BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+			BB->SetValueAsVector("EQSLocation", Stimulus.StimulusLocation);
+
 			if (CurrentState == EEnemyAIState::Patrol)
 			{
 				SetState(EEnemyAIState::Search);
 			}
+
 		}
 		#if WITH_EDITOR
 				DrawDebugSphere(GetWorld(), Stimulus.StimulusLocation, 50.f, 12, FColor::Magenta, false, 2.f);
