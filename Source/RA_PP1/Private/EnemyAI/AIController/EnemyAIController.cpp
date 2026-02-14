@@ -26,14 +26,14 @@ AEnemyAIController::AEnemyAIController()
 	SightConfig->PeripheralVisionAngleDegrees = 70.f;
 	SightConfig->SetMaxAge(5.0f);
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 
 	//Hear
 	HearingConfig->HearingRange = 2000.f;
 	HearingConfig->SetMaxAge(5.0f);
 	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
-	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	
 	//Perception
@@ -44,7 +44,8 @@ AEnemyAIController::AEnemyAIController()
 
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
-	
+
+
 	
 }
 //Possess player
@@ -94,7 +95,9 @@ void AEnemyAIController::Tick(float DeltaTime)
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	UBlackboardComponent* BB = GetBlackboardComponent();
-	
+
+	//team
+	if (GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Friendly){return;}
 	//Sight percept
 	if (bSightPerception && Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
@@ -177,5 +180,19 @@ void AEnemyAIController::OnEQSFinished(TSharedPtr<FEnvQueryResult, ESPMode::Thre
 
 
 
+//Team ID
+ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
+	if (!OtherTeamAgent)
+	{
+		return ETeamAttitude::Neutral;
+	}
+	if (GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId())
+	{
+		return ETeamAttitude::Friendly;
+	}
+	return ETeamAttitude::Hostile;
+}
 
 

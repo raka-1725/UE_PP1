@@ -12,6 +12,8 @@ AEnemyCharacter::AEnemyCharacter()
 	AIControllerClass = AEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	//Team ID
+	TeamId = FGenericTeamId(1);
 }
 
 

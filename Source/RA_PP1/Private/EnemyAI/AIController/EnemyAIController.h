@@ -75,9 +75,10 @@ protected:
 	void RunEQS();
 	void OnEQSFinished(TSharedPtr<FEnvQueryResult> EnvQueryResult);
 
+	//team id
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 
-	
 	//Search
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI | EQS")
 	bool bPlayerVisible = false;
@@ -114,5 +115,7 @@ public:
 	{
 		return PatrolLocations[(CurrentPatrolIndex + 1) % PatrolLocations.Num()];
 	};
+
+	virtual FGenericTeamId GetGenericTeamId() const override {return FGenericTeamId(1);};
 	
 };
